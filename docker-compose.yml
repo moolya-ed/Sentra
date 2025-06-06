@@ -1,0 +1,29 @@
+version: "3"
+services:
+  capture:
+    build:
+      context: .
+      dockerfile: Dockerfile.capture
+    ports:
+      - "8100:8100"
+    volumes:
+      - ./data:/app/data
+    restart: always
+
+  analysis:
+    build:
+      context: .
+      dockerfile: Dockerfile.analysis
+    ports:
+      - "8200:8200"
+    volumes:
+      - ./data:/app/data
+    restart: always
+
+  response:
+    build:
+      context: .
+      dockerfile: Dockerfile.response
+    ports:
+      - "8300:8300"
+    restart: always

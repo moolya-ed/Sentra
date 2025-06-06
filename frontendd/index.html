@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Traffic Dashboard</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background-color: #f5f5f5; }
+    h1 { color: #333; }
+    .section { margin-bottom: 2rem; }
+    table, th, td { border: 1px solid #aaa; border-collapse: collapse; padding: 0.5rem; }
+    table { background-color: #fff; width: 100%; }
+    th { background-color: #eee; }
+  </style>
+</head>
+<body>
+  <h1>Real-time Traffic Dashboard</h1>
+
+  <div class="section">
+    <h2>Requests per Minute</h2>
+    <p id="rpm">Loading...</p>
+  </div>
+
+  <div class="section">
+    <h2>Top Source IPs (Possible Attackers)</h2>
+    <table id="top-ips-table">
+      <thead><tr><th>IP Address</th><th>Requests</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Request Method Distribution</h2>
+    <ul id="method-dist"></ul>
+  </div>
+
+  <div class="section">
+    <h2>Response Code Statistics</h2>
+    <ul id="resp-codes"></ul>
+  </div>
+
+  <div class="section">
+    <h2>Traffic Trend (Last Hour)</h2>
+    <ul id="trend"></ul>
+  </div>
+
+  <div class="section">
+    <h2>Average Response Time (ms)</h2>
+    <p id="avg-resp-time">Loading...</p>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
