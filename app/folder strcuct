@@ -1,0 +1,14 @@
+sentra/
+├── app/
+│   ├── __init__.py                  # Initializes the app as a Python package
+│   ├── main.py                      # FastAPI app, API routes, and startup logic
+│   ├── models.py                    # SQLAlchemy models: traffic_metadata table
+│   ├── schemas.py                   # Pydantic models for request/response validation
+│   ├── database.py                  # Database engine and session setup using SQLite
+│   ├── crud.py                      # All database operations: insert, query, metrics
+│   ├── utils.py                     # Utility functions (e.g., get request size, log helper)
+│   └── config.py                    # Environment-based configuration settings
+├── docker-compose.yml              # Starts app using Docker with single command
+├── Dockerfile                      # Defines container image for FastAPI backend
+├── requirements.txt                # List of all Python package dependencies
+└── .env                            # Environment variables (e.g., DB path, log level)
