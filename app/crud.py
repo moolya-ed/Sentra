@@ -1,7 +1,8 @@
+from uuid import uuid4
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timedelta
-from .models import TrafficMetadata
+from .models import TrafficMetadata, Alert
 from .schemas import TrafficEntry
 
 def create_traffic_entry(db: Session, entry: TrafficEntry):
@@ -12,11 +13,6 @@ def create_traffic_entry(db: Session, entry: TrafficEntry):
     return db_entry
 
 def get_summary_metrics(db: Session, filter_ip: str = None, filter_method: str = None):
-    from sqlalchemy import func
-    from .models import TrafficMetadata
-    from datetime import datetime, timedelta
-
-    # Base query with filters
     base_query = db.query(TrafficMetadata)
 
     if filter_ip:
@@ -55,3 +51,25 @@ def get_summary_metrics(db: Session, filter_ip: str = None, filter_method: str =
         "response_codes": response_codes,
         "traffic_trend_last_hour": traffic_last_hour
     }
+
+def create_alert(db: Session, alert_type: str, description: str, source_ip: str):
+    alert = Alert(
+        id=str(uuid4()),
+        timestamp=datetime.utcnow(),
+        alert_type=alert_type,
+        description=description,
+        source_ip=source_ip,
+        severity="High"
+    )
+    print("✅ ALERT SAVED:", alert_type, description, source_ip)
+    db.add(alert)
+    db.commit()
+    db.refresh(alert)
+    return alert
+
+def get_alerts(db: Session, limit: int = 50):
+    return db.query(Alert).order_by(Alert.timestamp.desc()).limit(limit).all()
+
+def get_recent_alerts(db: Session, limit: int = 5):
+    return db.query(Alert).order_by(Alert.timestamp.desc()).limit(limit).all()
+

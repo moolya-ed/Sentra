@@ -15,3 +15,14 @@ class TrafficEntry(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class AlertSchema(BaseModel):
+    id: str
+    timestamp: datetime
+    alert_type: str
+    description: str
+    source_ip: str
+
+    class Config:
+        orm_mode = True
