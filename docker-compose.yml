@@ -6,6 +6,6 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./data:/app/data  # 👈 Store DB outside container
+      - ./data:/app/data
     env_file:
       - .env

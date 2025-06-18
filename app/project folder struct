@@ -1,0 +1,19 @@
+sentra/
+├── app/
+│   ├── main.py          # ✅ FastAPI entry point: logging, analytics, blocking, admin endpoints
+│   ├── crud.py          # ✅ Business logic: logging, detection, alerting, blocking, email
+│   ├── models.py        # ✅ DB models: TrafficMetadata, Alert, BlockedIP, ActionLog
+│   ├── schemas.py       # ✅ Pydantic schemas for requests & responses
+│   ├── database.py      # ✅ DB engine & session
+│   ├── config.py        # ✅ Env config: spike threshold, block duration, SMTP for alerts
+│   └── __init__.py
+├── data/
+│   └── sentra.db        # ✅ SQLite DB file — auto-created
+├── tests/
+│   ├── test_sprint1.py  # ✅ Unit tests: system status, traffic log, traffic summary
+│   ├── test_sprint2.py  # ✅ Unit tests: alert triggering (spike, suspicious UA, sensitive URL)
+│   ├── test_sprint3.py  # ✅ Unit tests: auto-blocking, blocked IPs API, unblock IP, action logs
+├── .env                 # ✅ Environment config (DB, spike threshold, SMTP credentials)
+├── Dockerfile           # ✅ Container build
+├── docker-compose.yml   # ✅ Compose for local run
+├── requirements.txt     # ✅ Python dependencies (FastAPI, SQLAlchemy, etc.)

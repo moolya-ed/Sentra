@@ -26,3 +26,26 @@ class AlertSchema(BaseModel):
 
     class Config:
         orm_mode = True
+
+from pydantic import BaseModel
+from datetime import datetime
+
+class UnblockIPRequest(BaseModel):
+    ip: str
+
+class BlockedIPSchema(BaseModel):
+    ip: str
+    blocked_until: datetime
+
+    class Config:
+        orm_mode = True
+
+class ActionLogSchema(BaseModel):
+    id: str
+    timestamp: datetime
+    action: str
+    target: str
+    reason: str
+
+    class Config:
+        orm_mode = True

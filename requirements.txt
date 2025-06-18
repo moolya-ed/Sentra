@@ -3,3 +3,4 @@ uvicorn
 sqlalchemy
 pydantic==1.10.13
 python-dotenv
+twilio>=8.0.0
