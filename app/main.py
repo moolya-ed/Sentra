@@ -86,3 +86,31 @@ class UnblockRequest(BaseModel):
 def unblock_ip(request: UnblockRequest, db: Session = Depends(get_db)):
     crud.unblock_ip(db, request.ip)
     return {"message": f"✅ IP {request.ip} unblocked"}
+
+# ✅ Add this at the end of main.py
+
+@app.get("/action-logs")
+def get_action_logs(limit: int = Query(default=50), db: Session = Depends(get_db)):
+    logs = crud.get_action_logs(db, limit)
+    return [
+        {
+            "id": log.id,
+            "timestamp": log.timestamp.isoformat(),
+            "action": log.action,
+            "target": log.target,
+            "reason": log.reason
+        } for log in logs
+    ]
+
+# ✅ Sprint 4: Get all Action Logs
+@app.get("/admin/action-logs")
+def get_action_logs(db: Session = Depends(get_db)):
+    logs = crud.get_action_logs(db)
+    return [
+        {
+            "timestamp": log.timestamp.isoformat(),
+            "action": log.action,
+            "target": log.target,
+            "reason": log.reason
+        } for log in logs
+    ]
