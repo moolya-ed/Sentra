@@ -88,7 +88,7 @@ def unblock_ip(request: UnblockRequest, db: Session = Depends(get_db)):
     return {"message": f"✅ IP {request.ip} unblocked"}
 
 # ✅ Add this at the end of main.py
-
+'''
 @app.get("/action-logs")
 def get_action_logs(limit: int = Query(default=50), db: Session = Depends(get_db)):
     logs = crud.get_action_logs(db, limit)
@@ -101,7 +101,7 @@ def get_action_logs(limit: int = Query(default=50), db: Session = Depends(get_db
             "reason": log.reason
         } for log in logs
     ]
-
+'''
 # ✅ Sprint 4: Get all Action Logs
 @app.get("/admin/action-logs")
 def get_action_logs(db: Session = Depends(get_db)):
@@ -113,4 +113,18 @@ def get_action_logs(db: Session = Depends(get_db)):
             "target": log.target,
             "reason": log.reason
         } for log in logs
+    ]
+
+# ✅ Add this to app/main.py (near other @app.get endpoints)
+
+@app.get("/admin/alerts")
+def get_all_alerts(db: Session = Depends(get_db)):
+    alerts = db.query(models.Alert).order_by(models.Alert.timestamp.desc()).all()
+    return [
+        {
+            "timestamp": alert.timestamp.isoformat(),
+            "type": alert.alert_type,
+            "description": alert.description,
+            "source_ip": alert.source_ip
+        } for alert in alerts
     ]
