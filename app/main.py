@@ -34,12 +34,42 @@ async def block_ip_middleware(request: Request, call_next):
     finally:
         db.close()
 
-@app.get("/system/status")
+'''@app.get("/system/status",
+         include_in_schema=False
+         )
 def system_status(service: str = Query(default="all")):
     allowed_services = ["db", "api", "all"]
     if service not in allowed_services:
         raise HTTPException(status_code=404, detail=f"Service '{service}' Not Found")
     return {"status": "ok", "service": service}
+'''
+
+from fastapi import Request
+
+@app.api_route("/system/status", methods=["GET"], include_in_schema=False)
+def system_status(request: Request):
+    service = request.query_params.get("service", "all")
+    allowed_services = ["db", "api", "all"]
+    if service not in allowed_services:
+        raise HTTPException(status_code=404, detail=f"Service '{service}' Not Found")
+
+    status = {"service": service}
+
+    if service in ["db", "all"]:
+        try:
+            db = SessionLocal()
+            db.execute("SELECT 1")
+            status["db"] = "ok"
+        except Exception as e:
+            status["db"] = f"error: {str(e)}"
+        finally:
+            db.close()
+
+    if service in ["api", "all"]:
+        status["api"] = "ok"
+
+    return status
+
 
 @app.post("/traffic/log")
 def log_traffic(entry: schemas.TrafficEntry, db: Session = Depends(get_db)):
