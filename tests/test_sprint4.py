@@ -1,31 +1,33 @@
+# ✅ tests/test_sprint4.py
+
 import os
-import pytest
+import sys
+import time
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
-from app import models, crud, database
+# Import app properly
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from app.main import app, get_db
+from app import models, database
 
-# ✅ 1️⃣ Use file-based SQLite for threads
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+# Use StaticPool for isolated in-memory DB
+SQLALCHEMY_DATABASE_URL = "sqlite://"
 
-# ✅ 2️⃣ Delete old test.db if exists
-if os.path.exists("test.db"):
-    os.remove("test.db")
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool
+)
 
-# ✅ 3️⃣ Create engine & session
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# ✅ 4️⃣ Make sure both modules use same SessionLocal
+TestingSessionLocal = sessionmaker(bind=engine)
 database.SessionLocal = TestingSessionLocal
-crud.SessionLocal = TestingSessionLocal
 
-# ✅ 5️⃣ Create tables ON that file DB
 models.Base.metadata.create_all(bind=engine)
 
-# ✅ 6️⃣ Override FastAPI DB dependency
 def override_get_db():
     db = TestingSessionLocal()
     try:
@@ -38,32 +40,30 @@ app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 
-def test_block_ip_logic():
+def test_unblock_and_action_logs():
+    # Block IP first by triggering spike
     for _ in range(105):
         res = client.post("/traffic/log", json={
-            "source_ip": "192.168.1.101",
+            "source_ip": "192.168.1.99",
             "method": "GET",
-            "url": "/home",
-            "headers": "test",
-            "user_agent": "normal-agent",
+            "url": "/test",
+            "headers": "{}",
+            "user_agent": "Normal",
             "request_size": 10,
             "response_code": 200,
-            "response_time_ms": 20
+            "response_time_ms": 5
         })
         assert res.status_code == 200
+        time.sleep(0.005)
 
-    res = client.get("/blocked-ips")
+    # Unblock IP
+    res = client.post("/unblock-ip", json={"ip": "192.168.1.99"})
     assert res.status_code == 200
-    assert any(ip["ip_address"] == "192.168.1.101" for ip in res.json())
+    assert "unblocked" in res.json()["message"]
 
-
-def test_action_logs_logic():
-    res = client.post("/unblock-ip", json={"ip": "192.168.1.101"})
-    assert res.status_code == 200
-
+    # Verify action logs have Block & Unblock
     res = client.get("/admin/action-logs")
     assert res.status_code == 200
-    logs = res.json()
-    actions = [log["action"] for log in logs]
+    actions = [log["action"] for log in res.json()]
     assert "Block IP" in actions
     assert "Unblock IP" in actions

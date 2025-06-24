@@ -1,35 +1,34 @@
+# ✅ tests/integration_all_sprints.py
+
 import os
+import sys
+import time
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
-from app import models, crud, database
+# Setup imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from app.main import app, get_db
+from app import models, database
 
-# -------------------------------
-# ✅ 1️⃣ Use file-based SQLite
-# -------------------------------
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+# ✅ Shared test DB
+SQLALCHEMY_DATABASE_URL = "sqlite://"
 
-# Remove leftover test DB
-if os.path.exists("test.db"):
-    os.remove("test.db")
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool
+)
 
-# Create engine & test session
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Make sure all modules share this session
+TestingSessionLocal = sessionmaker(bind=engine)
 database.SessionLocal = TestingSessionLocal
-crud.SessionLocal = TestingSessionLocal
 
-# Create all tables
 models.Base.metadata.create_all(bind=engine)
 
-# -------------------------------
-# ✅ 2️⃣ Override FastAPI DB dependency
-# -------------------------------
 def override_get_db():
     db = TestingSessionLocal()
     try:
@@ -41,109 +40,106 @@ app.dependency_overrides[get_db] = override_get_db
 
 client = TestClient(app)
 
+# -----------------------------
+# ✅ Sprint 1
+# -----------------------------
 
-# -------------------------------
-# ✅ 3️⃣ Sprint 1: System & Logging
-# -------------------------------
 def test_system_status():
     res = client.get("/system/status?service=api")
     assert res.status_code == 200
-    assert res.json()["status"] == "ok"
+    assert res.json()["api"] == "ok"
+
+    conn = engine.connect()
+    conn.execute(text("SELECT 1"))
+    conn.close()
 
 def test_log_traffic():
     res = client.post("/traffic/log", json={
         "source_ip": "192.168.1.10",
         "method": "GET",
         "url": "/home",
-        "headers": "test",
-        "user_agent": "normal",
+        "headers": "{}",
+        "user_agent": "Normal",
         "request_size": 50,
         "response_code": 200,
-        "response_time_ms": 30
+        "response_time_ms": 20
     })
     assert res.status_code == 200
-    assert res.json()["message"] == "Traffic logged"
+    assert "Traffic logged" in res.json()["message"]
 
 def test_traffic_summary():
     res = client.get("/analytics/traffic-summary")
     assert res.status_code == 200
     assert "total_requests" in res.json()
 
-# -------------------------------
-# ✅ 4️⃣ Sprint 2: Alerts
-# -------------------------------
-def test_suspicious_agent_alert():
-    res = client.post("/traffic/log", json={
-        "source_ip": "192.168.1.11",
-        "method": "GET",
-        "url": "/home",
-        "headers": "test",
-        "user_agent": "sqlmap",
-        "request_size": 20,
-        "response_code": 200,
-        "response_time_ms": 25
-    })
-    data = res.json()
-    assert res.status_code == 200
-    assert any("sqlmap" in alert for alert in data["alerts_triggered"])
+# -----------------------------
+# ✅ Sprint 2
+# -----------------------------
 
-def test_sensitive_url_alert():
+def test_suspicious_agent():
     res = client.post("/traffic/log", json={
-        "source_ip": "192.168.1.12",
+        "source_ip": "192.168.1.20",
         "method": "GET",
-        "url": "/admin",
-        "headers": "test",
-        "user_agent": "normal",
+        "url": "/page",
+        "headers": "{}",
+        "user_agent": "sqlmap",
         "request_size": 10,
         "response_code": 200,
-        "response_time_ms": 20
+        "response_time_ms": 5
     })
-    data = res.json()
     assert res.status_code == 200
-    assert any("/admin" in alert for alert in data["alerts_triggered"])
+    alerts = res.json()["alerts_triggered"]
+    assert any("sqlmap" in alert for alert in alerts)
 
-# -------------------------------
-# ✅ 5️⃣ Sprint 3: Spike Detection & Block
-# -------------------------------
-def test_spike_blocking():
+def test_sensitive_url():
+    res = client.post("/traffic/log", json={
+        "source_ip": "192.168.1.21",
+        "method": "GET",
+        "url": "/admin",
+        "headers": "{}",
+        "user_agent": "Normal",
+        "request_size": 10,
+        "response_code": 200,
+        "response_time_ms": 5
+    })
+    assert res.status_code == 200
+    alerts = res.json()["alerts_triggered"]
+    assert any("/admin" in alert for alert in alerts)
+
+# -----------------------------
+# ✅ Sprint 3
+# -----------------------------
+
+def test_spike_block():
     for _ in range(105):
         res = client.post("/traffic/log", json={
-            "source_ip": "192.168.1.13",
+            "source_ip": "192.168.1.30",
             "method": "GET",
-            "url": "/home",
-            "headers": "test",
-            "user_agent": "normal",
+            "url": "/page",
+            "headers": "{}",
+            "user_agent": "Normal",
             "request_size": 10,
             "response_code": 200,
-            "response_time_ms": 10
+            "response_time_ms": 5
         })
         assert res.status_code == 200
+        time.sleep(0.005)
 
-    # Confirm blocked
     res = client.get("/blocked-ips")
-    blocked = res.json()
-    assert any(ip["ip_address"] == "192.168.1.13" for ip in blocked)
-
-# -------------------------------
-# ✅ 6️⃣ Sprint 4: Unblock & Action Logs
-# -------------------------------
-def test_unblock_ip_and_logs():
-    # Unblock IP
-    res = client.post("/unblock-ip", json={"ip": "192.168.1.13"})
     assert res.status_code == 200
+    assert any(ip["ip_address"] == "192.168.1.30" for ip in res.json())
 
-    # Confirm unblock recorded
+# -----------------------------
+# ✅ Sprint 4
+# -----------------------------
+
+def test_unblock_and_logs():
+    res = client.post("/unblock-ip", json={"ip": "192.168.1.30"})
+    assert res.status_code == 200
+    assert "unblocked" in res.json()["message"]
+
     res = client.get("/admin/action-logs")
-    logs = res.json()
-    actions = [log["action"] for log in logs]
+    assert res.status_code == 200
+    actions = [log["action"] for log in res.json()]
     assert "Block IP" in actions
     assert "Unblock IP" in actions
-
-# -------------------------------
-# ✅ 7️⃣ Clean up
-# -------------------------------
-@pytest.fixture(scope="session", autouse=True)
-def cleanup():
-    yield
-    if os.path.exists("test.db"):
-        os.remove("test.db")
