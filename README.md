@@ -1,4 +1,4 @@
-📄 README.md — Sentra: Smart DDoS Detection System
+Sentra: Smart DDoS Detection System
 ✅ Project Overview
 
 Sentra is a lightweight, FastAPI-based backend system for real-time DDoS detection and traffic monitoring.
