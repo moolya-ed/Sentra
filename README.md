@@ -40,7 +40,7 @@ Sensitive URL Access	Blacklist match (e.g., /admin).
 
 # Clone repo
 git clone https://github.com/moolya-ed/Sentra.git
-cd Sentra
+
 
 # Start with Docker
 docker compose up --build
